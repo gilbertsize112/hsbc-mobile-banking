@@ -1,0 +1,32 @@
+{
+  "users": {
+    "winifred": {
+      "password": "08068611661",
+      "name": "winifred",
+      "walletStatus": "ACTIVE",
+      "pendingBalance": 0,
+      "availableBalance": 5000,
+      "unlockFee": 100,
+      "notifiedAdmin": true
+    }
+  },
+  "messages": {
+    "winifred": [
+      {
+        "sender": "user",
+        "text": "hi i have not seen my money",
+        "timestamp": "06:14 PM"
+      },
+      {
+        "sender": "user",
+        "text": "can u check it out for me",
+        "timestamp": "06:14 PM"
+      },
+      {
+        "sender": "admin",
+        "text": "okay am on it ",
+        "timestamp": "06:15 PM"
+      }
+    ]
+  }
+}

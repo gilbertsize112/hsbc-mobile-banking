@@ -7,8 +7,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- CLOUD DATABASE CONNECTION ---
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://hsbc:08068611551@cluster0.zsj4kdb.mongodb.net/test?retryWrites=true&w=majority";
-
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://hsbc:88888888Aa@cluster0.zsj4kdb.mongodb.net/test?retryWrites=true&w=majority";
 mongoose.connect(MONGO_URI)
     .then(() => console.log("✅ Connected to Secure Bank Vault (MongoDB)"))
     .catch(err => console.error("❌ MongoDB Connection Error:", err));

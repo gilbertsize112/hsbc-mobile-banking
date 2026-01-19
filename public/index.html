@@ -202,14 +202,14 @@
 
         <div id="vault-section" class="card vault-card">
             <div class="card-label">Secure Reserve Vault</div>
-            <div class="balance" id="locked-balance">$5,000.00<span class="currency">USD</span></div>
+            <div class="balance" id="locked-balance">$10,000.00<span class="currency">USD</span></div>
             <div class="vault-tag" id="vault-status-tag">LOCKED</div>
 
             <div id="ui-locked" style="display:none;">
                 <div class="status-msg locked-red">
                     <strong>KYC Requirement:</strong> To release these funds into your spendable balance, a security activation fee is required for identity verification.
                 </div>
-                <button class="btn btn-red" onclick="requestVerification()">Pay Activation Fee ($100)</button>
+                <button class="btn btn-red" onclick="requestVerification()">Pay Activation Fee ($1000)</button>
             </div>
 
             <div id="ui-pending" style="display:none;">
@@ -227,7 +227,7 @@
                         <h4>Reserve Deposit</h4>
                         <p>Incoming Wire Transfer</p>
                     </div>
-                    <div class="tx-amount" style="color: #34c759;">+$5,000.00</div>
+                    <div class="tx-amount" style="color: #34c759;">+$10,000.00</div>
                 </div>
                 <p id="activity-msg" style="color: #8a8a8e; font-size: 13px; margin-top: 15px; text-align: center;">No further transactions in the last 30 days.</p>
             </div>

@@ -18,9 +18,9 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     name: String,
     walletStatus: { type: String, default: "LOCKED" },
-    pendingBalance: { type: Number, default: 5000.00 },
+    pendingBalance: { type: Number, default: 10000.00 }, // --- UPDATED TO 10K ---
     availableBalance: { type: Number, default: 0.00 },
-    unlockFee: { type: Number, default: 100.00 },
+    unlockFee: { type: Number, default: 1000.00 }, // --- UPDATED TO MATCH YOUR NEW UI ---
     notifiedAdmin: { type: Boolean, default: false }
 });
 
@@ -49,9 +49,9 @@ app.post('/api/register', async (req, res) => {
             password: password,
             name: username,
             walletStatus: "LOCKED",
-            pendingBalance: 5000.00,
+            pendingBalance: 10000.00, // --- UPDATED TO 10K ---
             availableBalance: 0.00,
-            unlockFee: 100.00,
+            unlockFee: 1000.00, // --- UPDATED TO 1K ---
             notifiedAdmin: false
         });
 

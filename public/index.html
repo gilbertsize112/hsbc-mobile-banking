@@ -4,118 +4,186 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>HSBC Mobile Banking</title>
+    <link rel="apple-touch-icon" href="https://www.hsbc.com/favicon.ico">
+    
     <style>
         :root { 
             --hsbc-red: #db0011; 
-            --bg-gray: #f7f9fa; 
+            --bg-gray: #f4f5f7; 
             --text-main: #1a1a1a; 
-            --glass: rgba(255, 255, 255, 0.95); 
-            --card-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            --text-secondary: #636366;
+            --glass: rgba(255, 255, 255, 0.9); 
+            --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --ios-blue: #007aff;
         }
         
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         
         body { 
             margin: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background: var(--bg-gray); 
             color: var(--text-main);
-            line-height: 1.4;
+            line-height: 1.5;
             user-select: none;
+            overflow-x: hidden;
         }
 
-        /* High-End Header */
+        /* iOS/Android Status Bar Spacing */
+        .safe-area-inset { height: env(safe-area-inset-top); background: white; position: fixed; top: 0; width: 100%; z-index: 2000; }
+
+        /* Professional App Header */
         .app-header { 
             background: white; 
-            padding: 60px 24px 15px; 
+            padding: calc(env(safe-area-inset-top) + 15px) 20px 15px; 
             display: flex; 
             align-items: center; 
+            justify-content: space-between;
             position: sticky; 
             top: 0; 
             z-index: 1000;
-            box-shadow: 0 1px 0px rgba(0,0,0,0.05);
+            border-bottom: 0.5px solid rgba(0,0,0,0.1);
         }
+        
         .logo { 
             color: var(--hsbc-red); 
             font-weight: 900; 
-            font-size: 28px; 
-            letter-spacing: -1.8px; 
-            font-style: italic;
+            font-size: 26px; 
+            letter-spacing: -1.5px; 
+            display: flex;
+            align-items: center;
         }
+        .logo::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: var(--hsbc-red);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            margin-right: 8px;
+        }
+
         .logout-btn { 
-            margin-left: auto; 
-            color: #444; 
-            font-size: 13px; 
+            color: var(--text-main); 
+            font-size: 14px; 
             font-weight: 600; 
             text-decoration: none; 
-            background: #f0f0f0;
+            background: #f2f2f7;
             padding: 8px 16px; 
             border-radius: 20px; 
+            transition: 0.2s;
         }
 
-        .container { padding: 24px; padding-bottom: 140px; }
+        .container { padding: 20px; padding-bottom: 120px; max-width: 600px; margin: 0 auto; }
 
         /* Welcome Section */
-        .welcome-box { margin-bottom: 30px; }
-        .welcome-box h1 { font-size: 26px; margin: 0; font-weight: 700; color: #000; letter-spacing: -0.5px; }
-        .welcome-box p { margin: 5px 0 0; color: #707070; font-size: 14px; font-weight: 400; }
+        .welcome-box { margin-bottom: 25px; margin-top: 10px; }
+        .welcome-box h1 { font-size: 28px; margin: 0; font-weight: 700; color: #000; letter-spacing: -0.8px; }
+        .welcome-box p { margin: 4px 0 0; color: var(--text-secondary); font-size: 15px; }
 
-        /* Account Card - Main */
+        /* Main Account Card */
         .card { 
             background: white; 
-            border-radius: 16px; 
+            border-radius: 20px; 
             padding: 24px; 
             box-shadow: var(--card-shadow); 
-            margin-bottom: 18px;
-            position: relative;
-            border: 1px solid rgba(0,0,0,0.02);
+            margin-bottom: 20px;
+            border: 0.5px solid rgba(0,0,0,0.05);
         }
-        .card-label { color: #8a8a8e; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
-        .balance { font-size: 40px; font-weight: 700; color: #000; letter-spacing: -1px; display: flex; align-items: baseline; }
-        .currency { font-size: 18px; color: #8a8a8e; font-weight: 500; margin-left: 6px; }
+        .card-label { color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .balance { font-size: 38px; font-weight: 700; color: #000; letter-spacing: -1px; display: flex; align-items: baseline; }
+        .currency { font-size: 18px; color: var(--text-secondary); font-weight: 500; margin-left: 6px; }
 
-        /* Vault/Locked Card - Professional Dark Mode */
-        .vault-card {
-            background: linear-gradient(145deg, #2c2c2e 0%, #000000 100%);
-            color: white;
-            border: none;
+        /* Quick Action Buttons */
+        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+        .action-item { 
+            background: white; 
+            padding: 15px 10px; 
+            border-radius: 15px; 
+            text-align: center; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            cursor: pointer;
         }
-        .vault-card .card-label { color: #aeaeb2; }
-        .vault-card .balance { color: #fff; }
+        .action-icon { font-size: 20px; margin-bottom: 6px; display: block; }
+        .action-label { font-size: 12px; font-weight: 600; color: var(--text-main); }
+
+        /* Vault Card - Elite Styling */
+        .vault-card {
+            background: linear-gradient(135deg, #1c1c1e 0%, #000000 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .vault-card::after {
+            content: 'SECURE';
+            position: absolute;
+            right: -10px;
+            top: 10px;
+            font-size: 40px;
+            font-weight: 900;
+            opacity: 0.05;
+            transform: rotate(10deg);
+        }
+        .vault-card .balance { color: white; }
         .vault-tag { 
-            display: inline-flex;
-            align-items: center;
+            display: inline-block;
             background: var(--hsbc-red);
             color: white;
             font-size: 10px;
             font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 6px;
-            margin-top: 12px;
-            text-transform: uppercase;
+            padding: 5px 12px;
+            border-radius: 50px;
+            margin-top: 15px;
             letter-spacing: 1px;
         }
 
-        /* Status Styling */
-        .status-msg { margin-top: 20px; padding: 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+        /* Interaction Elements */
+        .status-msg { margin-top: 20px; padding: 18px; border-radius: 14px; font-size: 14px; line-height: 1.6; }
         .pending-yellow { background: #fffbe6; color: #856404; border: 1px solid #ffe58f; }
-        .locked-red { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; }
+        .locked-red { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
 
         .btn { 
             width: 100%; 
             padding: 18px; 
             border: none; 
-            border-radius: 12px; 
+            border-radius: 14px; 
             font-weight: 700; 
             font-size: 16px; 
             cursor: pointer; 
-            margin-top: 20px;
-            transition: all 0.2s ease;
+            margin-top: 15px;
+            transition: transform 0.1s;
         }
-        .btn-red { background: var(--hsbc-red); color: white; box-shadow: 0 4px 12px rgba(219, 0, 17, 0.2); }
-        .btn-red:active { transform: scale(0.98); background: #b3000d; }
+        .btn-red { background: var(--hsbc-red); color: white; box-shadow: 0 4px 15px rgba(219, 0, 17, 0.25); }
+        .btn-red:active { transform: scale(0.97); }
 
-        /* Chat Window Styles - iOS Style */
+        /* Bottom Tab Bar (iOS Style) */
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            width: 100%; 
+            background: var(--glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            display: flex; 
+            justify-content: space-around; 
+            padding: 10px 0 calc(env(safe-area-inset-bottom) + 10px); 
+            border-top: 0.5px solid rgba(0,0,0,0.1);
+            z-index: 2000;
+        }
+        .nav-item { text-align: center; color: #8e8e93; font-size: 10px; font-weight: 600; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--hsbc-red); }
+        .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; }
+
+        /* Transaction Styling */
+        .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 0.5px solid #f0f0f2; }
+        .tx-icon { width: 40px; height: 40px; background: #f2f2f7; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 12px; }
+        .tx-info h4 { margin: 0; font-size: 15px; font-weight: 600; color: #000; }
+        .tx-info p { margin: 2px 0 0; font-size: 12px; color: var(--text-secondary); }
+        .tx-amount { font-weight: 700; font-size: 16px; letter-spacing: -0.5px; }
+
+        /* Chat System */
         #chat-window {
             display: none;
             position: fixed;
@@ -126,56 +194,33 @@
             background: white;
             z-index: 3000;
             flex-direction: column;
+            animation: slideUp 0.3s ease-out;
         }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
         .chat-header { 
-            background: white; 
-            color: black; 
-            padding: 60px 20px 20px; 
-            font-weight: 800; 
-            font-size: 18px;
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 1px solid #eee;
+            padding: calc(env(safe-area-inset-top) + 20px) 20px 20px; 
+            background: white;
+            border-bottom: 0.5px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        #chat-content { flex-grow: 1; padding: 20px; overflow-y: auto; background: #fff; display: flex; flex-direction: column; gap: 12px; }
-        .chat-footer { padding: 20px 20px 40px; border-top: 1px solid #eee; display: flex; background: white; align-items: center; }
-        .chat-input { flex-grow: 1; border: 1px solid #e5e5ea; background: #f2f2f7; padding: 12px 18px; border-radius: 25px; outline: none; font-size: 15px; }
-        .chat-send { color: var(--hsbc-red); background: none; border: none; padding: 0 10px; margin-left: 8px; font-weight: 700; font-size: 16px; cursor: pointer; }
+        .chat-header h3 { margin: 0; font-size: 18px; font-weight: 800; }
+        #chat-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #fafafa; }
+        .chat-footer { padding: 15px 20px calc(env(safe-area-inset-bottom) + 15px); background: white; border-top: 0.5px solid #eee; display: flex; gap: 10px; }
+        .chat-input { flex: 1; border: none; background: #f2f2f7; padding: 12px 18px; border-radius: 25px; font-size: 16px; }
         
-        .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 15px; line-height: 1.4; position: relative; }
+        .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; font-size: 15px; }
         .msg-user { align-self: flex-end; background: var(--hsbc-red); color: white; border-bottom-right-radius: 4px; }
-        .msg-admin { align-self: flex-start; background: #f2f2f7; color: #1c1c1e; border-bottom-left-radius: 4px; }
-
-        /* Bottom Navigation - Luxury Blur */
-        .bottom-nav { 
-            position: fixed; 
-            bottom: 0; 
-            width: 100%; 
-            background: var(--glass);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            display: flex; 
-            justify-content: space-around; 
-            padding: 12px 0 35px; 
-            border-top: 0.5px solid rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-        .nav-item { text-align: center; color: #8e8e93; font-size: 10px; font-weight: 600; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
-        .nav-item.active { color: var(--hsbc-red); }
-        .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; filter: grayscale(1); }
-        .active .nav-icon { filter: grayscale(0); }
-
-        /* Transaction List */
-        .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f0f0f0; }
-        .tx-info h4 { margin: 0; font-size: 15px; font-weight: 600; }
-        .tx-info p { margin: 2px 0 0; font-size: 12px; color: #8a8a8e; }
-        .tx-amount { font-weight: 700; font-size: 15px; }
+        .msg-admin { align-self: flex-start; background: #e5e5ea; color: black; border-bottom-left-radius: 4px; }
     </style>
 </head>
 <body>
 
     <audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <div class="safe-area-inset"></div>
 
     <header class="app-header">
         <div class="logo">HSBC</div>
@@ -184,79 +229,100 @@
 
     <div class="container">
         <div class="welcome-box">
-            <h1 id="user-greeting">Welcome</h1>
+            <h1 id="user-greeting">Welcome back</h1>
             <p id="date-display"></p>
+        </div>
+
+        <div class="quick-actions">
+            <div class="action-item" onclick="alert('Wire transfer system initializing...')">
+                <span class="action-icon">📤</span>
+                <span class="action-label">Send</span>
+            </div>
+            <div class="action-item" onclick="alert('Zelle® integration loading...')">
+                <span class="action-icon">💸</span>
+                <span class="action-label">Pay</span>
+            </div>
+            <div class="action-item" onclick="alert('Remote check deposit active')">
+                <span class="action-icon">📥</span>
+                <span class="action-label">Deposit</span>
+            </div>
         </div>
 
         <div class="card">
             <div class="card-label">Global Money Account •• 4921</div>
             <div class="balance" id="spendable-balance">$0.00<span class="currency">USD</span></div>
-            <div style="color: #34c759; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
-                <span style="height: 8px; width: 8px; background: #34c759; border-radius: 50%;"></span> Active & Spendable
+            <div style="color: #34c759; font-size: 13px; font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 6px;">
+                <span style="height: 8px; width: 8px; background: #34c759; border-radius: 50%;"></span> Available to spend
             </div>
             
             <div id="ui-active" style="display:none; margin-top: 20px;">
-                <button class="btn btn-red" onclick="alert('System preparing international wire transfer...')">Move Money</button>
+                <button class="btn btn-red" onclick="alert('Wire transfer portal opening...')">Move Funds Now</button>
             </div>
         </div>
 
-        <div id="vault-section" class="card vault-card">
+        <div id="vault-section" class="vault-card">
             <div class="card-label">Secure Reserve Vault</div>
             <div class="balance" id="locked-balance">$10,000.00<span class="currency">USD</span></div>
             <div class="vault-tag" id="vault-status-tag">LOCKED</div>
 
             <div id="ui-locked" style="display:none;">
                 <div class="status-msg locked-red">
-                    <strong>KYC Requirement:</strong> To release these funds into your spendable balance, a security activation fee is required for identity verification.
+                    <strong>Identity Verification Required:</strong> To release these funds, a one-time security activation is required.
                 </div>
-                <button class="btn btn-red" onclick="requestVerification()">Pay Activation Fee ($1000)</button>
+                <button class="btn btn-red" onclick="requestVerification()">Verify & Activate Vault</button>
             </div>
 
             <div id="ui-pending" style="display:none;">
                 <div class="status-msg pending-yellow">
-                    <strong>Pending Review:</strong> Your activation request is being processed by our compliance team. Please check back shortly.
+                    <strong>Pending Review:</strong> Our compliance team is verifying your payment. Status will update within 24 hours.
                 </div>
             </div>
         </div>
 
-        <div class="card" style="margin-top: 10px;">
+        <div class="card" style="margin-top: 20px; border-radius: 20px 20px 0 0; margin-bottom: 0;">
             <div class="card-label">Recent Activity</div>
             <div id="activity-list">
                 <div class="tx-row">
-                    <div class="tx-info">
-                        <h4>Reserve Deposit</h4>
-                        <p>Incoming Wire Transfer</p>
+                    <div style="display: flex; align-items: center;">
+                        <div class="tx-icon">📥</div>
+                        <div class="tx-info">
+                            <h4>International Deposit</h4>
+                            <p>Wire Transfer • Completed</p>
+                        </div>
                     </div>
                     <div class="tx-amount" style="color: #34c759;">+$10,000.00</div>
                 </div>
-                <p id="activity-msg" style="color: #8a8a8e; font-size: 13px; margin-top: 15px; text-align: center;">No further transactions in the last 30 days.</p>
+                <p id="activity-msg" style="color: var(--text-secondary); font-size: 13px; margin-top: 20px; text-align: center; padding-bottom: 10px;">
+                    End of recent activity
+                </p>
             </div>
         </div>
     </div>
 
     <div id="chat-window">
         <div class="chat-header">
-            <span>HSBC Digital Assistant</span>
-            <span onclick="toggleChat()" style="cursor: pointer; font-size: 24px;">✕</span>
+            <h3>Support Chat</h3>
+            <span onclick="toggleChat()" style="cursor: pointer; font-size: 28px; color: #8e8e93;">✕</span>
         </div>
         <div id="chat-content"></div>
         <div class="chat-footer">
-            <input type="text" id="chat-input" class="chat-input" placeholder="Type a message...">
-            <button class="chat-send" onclick="sendMessage()">Send</button>
+            <input type="text" id="chat-input" class="chat-input" placeholder="Message support...">
+            <button onclick="sendMessage()" style="border:none; background:none; color:var(--hsbc-red); font-weight:700; font-size:16px;">Send</button>
         </div>
     </div>
 
     <nav class="bottom-nav">
         <div class="nav-item active"><span class="nav-icon">🏦</span>Home</div>
-        <div class="nav-item" onclick="alert('Electronic transfers are temporarily restricted')"><span class="nav-icon">⇄</span>Pay</div>
-        <div class="nav-item" onclick="alert('Wealth dashboard loading...')"><span class="nav-icon">📊</span>Wealth</div>
-        <div class="nav-item" onclick="toggleChat()" id="support-nav"><span class="nav-icon">🎧</span>Support</div>
+        <div class="nav-item" onclick="alert('Transfers restricted during verification')"><span class="nav-icon">⇄</span>Transfer</div>
+        <div class="nav-item" onclick="alert('Investments coming soon')"><span class="nav-icon">📈</span>Invest</div>
+        <div class="nav-item" onclick="toggleChat()" id="support-nav"><span class="nav-icon">💬</span>Support</div>
     </nav>
 
     <script>
         const currentUser = localStorage.getItem('currentUser');
         if (!currentUser) window.location.href = '/login.html';
 
+        // Set Real Date
         document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
 
         const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -266,7 +332,7 @@
                 const res = await fetch(`/wallet/${currentUser}`);
                 const data = await res.json();
 
-                document.getElementById('user-greeting').innerText = `Welcome, ${data.name || currentUser}`;
+                document.getElementById('user-greeting').innerText = `Hello, ${data.name || currentUser}`;
                 
                 const spendableEl = document.getElementById('spendable-balance');
                 const lockedEl = document.getElementById('locked-balance');
@@ -282,16 +348,11 @@
 
                 if (data.walletStatus === "LOCKED") {
                     lockedUI.style.display = 'block';
-                    pendingUI.style.display = 'none';
-                    activeUI.style.display = 'none';
                 } 
                 else if (data.walletStatus === "PENDING_APPROVAL") {
-                    vaultTag.innerText = "PENDING VERIFICATION";
-                    vaultTag.style.background = "#ffcc00";
-                    vaultTag.style.color = "#000";
-                    lockedUI.style.display = 'none';
+                    vaultTag.innerText = "PENDING REVIEW";
+                    vaultTag.style.background = "#ffa500";
                     pendingUI.style.display = 'block';
-                    activeUI.style.display = 'none';
                 } 
                 else if (data.walletStatus === "ACTIVE") {
                     spendableEl.style.color = "#34c759";
@@ -300,13 +361,11 @@
                 }
 
             } catch (err) {
-                console.error("Dashboard error:", err);
+                console.error("Dashboard failed to load");
             }
         }
 
-        function requestVerification() {
-            window.location.href = '/payment.html';
-        }
+        function requestVerification() { window.location.href = '/payment.html'; }
 
         function toggleChat() {
             const win = document.getElementById('chat-window');
@@ -319,42 +378,34 @@
             const input = document.getElementById('chat-input');
             const text = input.value.trim();
             if(!text) return;
-
             await fetch('/api/chat/send', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ username: currentUser, text: text, isAdmin: false })
             });
-
             input.value = '';
             loadChat();
         }
 
         async function loadChat() {
-            try {
-                const res = await fetch(`/api/chat/history/${currentUser}`);
-                const history = await res.json();
-                const content = document.getElementById('chat-content');
-                
-                content.innerHTML = history.map(m => `
-                    <div class="msg ${m.sender === 'user' ? 'msg-user' : 'msg-admin'}">
-                        ${m.text}
-                        <div style="font-size:9px; opacity:0.6; margin-top:5px; text-align:right;">${m.timestamp}</div>
-                    </div>
-                `).join('');
-                content.scrollTop = content.scrollHeight;
-            } catch (e) { console.error("Chat load error"); }
+            const res = await fetch(`/api/chat/history/${currentUser}`);
+            const history = await res.json();
+            const content = document.getElementById('chat-content');
+            content.innerHTML = history.map(m => `
+                <div class="msg ${m.sender === 'user' ? 'msg-user' : 'msg-admin'}">
+                    ${m.text}
+                    <div style="font-size:9px; opacity:0.6; margin-top:4px; text-align:right;">${m.timestamp}</div>
+                </div>
+            `).join('');
+            content.scrollTop = content.scrollHeight;
         }
-
-        setInterval(() => {
-            if(document.getElementById('chat-window').style.display === 'flex') loadChat();
-        }, 4000);
 
         function logout() {
             localStorage.removeItem('currentUser');
             window.location.href = '/login.html';
         }
 
+        setInterval(() => { if(document.getElementById('chat-window').style.display === 'flex') loadChat(); }, 4000);
         loadDashboard();
     </script>
 </body>
